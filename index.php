@@ -1,16 +1,18 @@
 <?php
 session_start();
-require './vendor/autoload.php';
+require 'vendor/autoload.php';
+use Facebook\FacebookRequest;
+
 
 $fb = new Facebook\Facebook([
         'app_id' => '1656446057762230',
         'app_secret' => '719cdf0f2ad27e026436d31ec5f811d1',
-        'default_graph_version' => 'v2.5',
+        'default_graph_version' => 'v2.10',
         ]);
 
 $helper = $fb->getRedirectLoginHelper();
 
-$permissions = ['publish_actions','manage_pages','publish_pages']; // optional
+$permissions = ['manage_pages','publish_pages']; // optional
 
 try {
     if (isset($_SESSION['facebook_access_token'])) {
@@ -52,20 +54,27 @@ if (isset($accessToken)) {
     if (isset($_GET['code'])) {
         header('Location: ./');
     }
-    
-    $pages = $fb->get('/me/accounts');
-    $page = $pages->getGraphEdge();
-    echo '<pre>';
-    
-    var_dump($page);
-echo '</pre>';
 
-//    $videoUpload = $fb->post('/1396548033898139/videos', array(
-//        'file_url' => 'http://www.sample-videos.com/video/mp4/480/big_buck_bunny_480p_1mb.mp4',
-//    ));
-//
-//    $videoUpload = $videoUpload->getGraphObject();
-//    var_dump($videoUpload);
+    //Get Page ID
+    $pages = $fb->get('/me?fields=id');
+    $page = $pages->getGraphObject()->asArray();
+
+    //Get long live access token for page
+    $data = $fb->get($page['id'].'/accounts?access_token='.$_SESSION['facebook_access_token']);
+    $data = $data->getGraphEdge()->asArray();
+//    echo '<pre>';
+//    var_dump($data);
+//    echo '</pre>';
+    //echo $data[0]['access_token'];
+    
+    //$fb->setDefaultAccessToken($data[0]['access_token']);
+    $videoUpload = $fb->post('/'.$page['id'].'/videos', array(
+        'file_url' => 'http://www.sample-videos.com/video/mp4/480/big_buck_bunny_480p_1mb.mp4',
+    ));
+
+    $videoUpload = $videoUpload->getGraphObject();
+    var_dump($videoUpload);
+//    
     // Now you can redirect to another page and use the access token from $_SESSION['facebook_access_token']
 } else {
     // replace your website URL same as added in the developers.facebook.com/apps e.g. if you used http instead of https and you used non-www version or www version of your website then you must add the same here
